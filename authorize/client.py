@@ -67,6 +67,14 @@ class AuthorizeClient(object):
         """
         return AuthorizeTransaction(self, uid)
 
+    def customer_profile(self, uid):
+        """
+        To get the payment information specific to the customer, customer_profile
+        will return an object that call get_payment_ids which will return just ids
+        or call get_payment_profiles wich will return the whole payment object.
+        """
+        return RetrievePaymentProfile(self, uid)
+
     def saved_card(self, uid):
         """
         To create a new transaction from a saved card, pass in the ``uid`` of
@@ -84,6 +92,52 @@ class AuthorizeClient(object):
         instance you can then use to udpate or cancel the payments.
         """
         return AuthorizeRecurring(self, uid)
+
+
+class RetrievePaymentProfile(object):
+    """
+    This is the interface for geting information specific to a customers
+    ID. You can get all the payment plan ids, and information specific to
+    them such as the specific card information.
+    """
+    def __init__(self, client, profile_id):
+        self._client = client
+        self._profile_id = profile_id
+
+    def __repr__(self):
+        return '<RetrievePaymentProfile {0._profile_id}>'.format(self)
+
+    def get_payment_ids(self):
+        """
+        This will return just the customers payment profile ids in a list
+        """
+        return self._client._customer.retrieve_payment_ids(
+            self._profile_id)
+
+    def get_payment_profiles(self):
+        """
+        This will return all the information for each customers payment get_payment_profiles
+        in a list. The structure goes something like this:
+        customerType = "individual"
+            billTo =
+               (CustomerAddressType){
+                    firstName = "Joe"
+                    lastName = "Blow"
+                }
+            customerPaymentProfileId = 22322790
+            payment =
+                (PaymentMaskedType){
+                    creditCard =
+                        (CreditCardMaskedType){
+                        cardNumber = "XXXX0027"
+                        expirationDate = "XXXX"
+                    }
+                }
+            }
+        Information can be accessed like so: [obj_name].payment.creditCard.cardNumber
+        """
+        return self._client._customer.retrieve_customer_profile(
+            self._profile_id)
 
 
 class AuthorizeCreditCard(object):
@@ -146,6 +200,18 @@ class AuthorizeCreditCard(object):
             .create_saved_profile(unique_id, [payment], email=self.email)
         uid = '{0}|{1}'.format(profile_id, payment_ids[0])
         return self._client.saved_card(uid)
+
+    def add(self, profile_id):
+        """
+        Saves the credit card to specified customer on Authorize.net's servers 
+        so you can create transactions at a later date. Returns an
+        :class:`AuthorizeSavedCard <authorize.client.AuthorizeSavedCard>`
+        instance that you can save or use.
+        """
+        unique_id = uuid4().hex[:20]
+        payment = self._client._customer.create_saved_payment(
+            self.credit_card, self.address, profile_id)
+        return "Success"
 
     def recurring(self, amount, start, days=None, months=None,
             occurrences=None, trial_amount=None, trial_occurrences=None):

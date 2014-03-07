@@ -132,6 +132,24 @@ class CustomerAPI(object):
         else:
             return payment_profile
 
+    def retrieve_payment_ids(self, profile_id):
+        profile = self._make_call(
+            'GetCustomerProfile', profile_id).profile
+        payment_info = []
+        for payment in profile.paymentProfiles[0]:
+            # print "the payment", payment.customerPaymentProfileId
+            payment_info.append(str(payment.customerPaymentProfileId))
+        return payment_info
+
+    def retrieve_customer_profile(self, profile_id):
+        profile = self._make_call(
+            'GetCustomerProfile', profile_id).profile
+        payment_info = []
+        for payment in profile.paymentProfiles[0]:
+            # print "the payment", payment.customerPaymentProfileId
+            payment_info.append(payment)
+        return payment_info
+
     def retrieve_saved_payment(self, profile_id, payment_id):
         payment_id = int(payment_id)
         profile = self._make_call(
